@@ -372,7 +372,7 @@ def format_document(doc_id: str = Field(description="Document to format")):
 class MCPClient:
     def __init__(self, command: str, args: list[str]):
         self._command = command  # "python" or "uv"  
-        self._args = args       # ["run", "mcp_server.py"]
+        self._args = args       # ["run", "mcp_servers/documents_mcp_server.py"]
         self._session = None
         
     async def connect(self):
@@ -612,7 +612,7 @@ async with AsyncExitStack() as stack:
 Speaker Notes:
 Async patterns are crucial in MCP applications for several reasons:
 
-First, MCP servers run as separate processes. In our companion app, when you start main.py, it spawns mcp_server.py as a subprocess. Communication happens via stdin/stdout, which is inherently I/O-bound and benefits greatly from async patterns.
+First, MCP servers run as separate processes. In our companion app, when you start main.py, it spawns mcp_servers/documents_mcp_server.py as a subprocess. Communication happens via stdin/stdout, which is inherently I/O-bound and benefits greatly from async patterns.
 
 Second, you often connect to multiple MCP servers simultaneously. Our app demonstrates this - you can pass additional server scripts as command line arguments, and each runs as its own subprocess. AsyncExitStack lets us manage all these connections cleanly.
 
@@ -654,7 +654,7 @@ except Exception as e:
 
 ## MCP Inspector
 ```bash
-mcp dev mcp_server.py
+mcp dev mcp_servers/documents_mcp_server.py
 # Opens web interface for testing tools, resources, prompts
 ```
 
@@ -663,7 +663,7 @@ mcp dev mcp_server.py
 
 ```python
 # Test client connection
-async with MCPClient("python", ["mcp_server.py"]) as client:
+async with MCPClient("uv", ["run", "mcp_servers/documents_mcp_server.py"]) as client:
     tools = await client.list_tools()
     print(f"Available tools: {[t.name for t in tools]}")
 ```

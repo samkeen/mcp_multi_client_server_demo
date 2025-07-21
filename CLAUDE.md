@@ -6,31 +6,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is an MCP (Model Context Protocol) Chat application - a CLI tool for interactive conversations with Claude through the Anthropic API. It's based on Anthropic's MCP course (https://anthropic.skilljar.com/introduction-to-model-context-protocol).
 
+## Project Structure
+
+```
+├── main.py                    # Entry point - initializes MCP clients and CLI
+├── mcp_client.py             # MCP client for connecting to servers
+├── mcp_servers/              # Directory containing MCP servers
+│   ├── documents_mcp_server.py  # Document management server
+│   └── README.md             # Guide for adding new servers
+├── core/                     # Core application modules
+│   ├── claude.py            # Claude API wrapper
+│   ├── cli.py               # CLI application and UI
+│   ├── cli_chat.py          # Chat interface logic
+│   ├── chat.py              # Core chat functionality
+│   └── tools.py             # Tool implementations
+└── docs/                     # Educational materials and slides
+```
+
 ## Key Commands
 
 ### Running the Application
 ```bash
-# With uv (recommended if USE_UV=1 in .env)
+# Run the main application
 uv run main.py
 
-# With standard Python
-python main.py
-
 # To run with additional MCP servers
-uv run main.py server1.py server2.py
+uv run main.py mcp_servers/calculator_mcp_server.py mcp_servers/weather_mcp_server.py
 ```
 
 ### Installation
 ```bash
-# With uv
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -e .
-
-# Without uv
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install anthropic python-dotenv prompt-toolkit "mcp[cli]==1.8.0"
+# This project requires uv
+uv sync
 ```
 
 ## Architecture
@@ -38,7 +45,7 @@ pip install anthropic python-dotenv prompt-toolkit "mcp[cli]==1.8.0"
 ### Core Components
 
 1. **MCP Client/Server Architecture**
-   - `mcp_server.py`: Implements MCP server with document management tools
+   - `mcp_servers/documents_mcp_server.py`: Implements MCP server with document management tools
    - `mcp_client.py`: MCP client for connecting to servers
    - `main.py`: Entry point that initializes MCP clients and starts CLI
 
@@ -62,14 +69,20 @@ Required `.env` file:
 ```
 ANTHROPIC_API_KEY=""  # Required: Your Anthropic API key
 CLAUDE_MODEL=""       # Required: Model ID (e.g., claude-3-sonnet-20240229)
-USE_UV="0"           # Optional: Set to "1" to use uv for running MCP server
+
+# Optional: Proxy configuration for corporate environments
+HTTP_PROXY=http://127.0.0.1:9000
+HTTPS_PROXY=http://127.0.0.1:9000
+NO_PROXY=localhost,127.0.0.1,.local
+VERIFY_SSL=false  # Set to false for corporate proxies with SSL issues
 ```
 
 ### Adding Features
 
-1. **New Documents**: Add to `docs` dictionary in `mcp_server.py`
-2. **New MCP Tools**: Implement in `mcp_server.py` following MCP protocol
+1. **New Documents**: Add to `docs` dictionary in `mcp_servers/documents_mcp_server.py`
+2. **New MCP Tools**: Implement in MCP server files following MCP protocol
 3. **New Commands**: Add prompts to MCP server's prompt list
+4. **New MCP Servers**: Create new server files in the `mcp_servers/` directory
 
 ### Development Notes
 

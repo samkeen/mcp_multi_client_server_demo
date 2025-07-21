@@ -2,6 +2,8 @@
 # This module provides a wrapper around Anthropic's Claude API,
 # simplifying message handling and API calls for the chat application.
 
+import os
+import httpx
 from anthropic import Anthropic
 from anthropic.types import Message
 
@@ -14,11 +16,30 @@ class Claude:
     - Managing the API client instance
     - Providing helper methods for message formatting
     - Abstracting common API parameters
+    - Supporting proxy configuration for corporate environments
     """
     
     def __init__(self, model: str):
-        # Initialize the Anthropic client (API key from environment)
-        self.client = Anthropic()
+        # Configure HTTP client with proxy support
+        http_client = None
+        if os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY"):
+            # httpx Client uses 'proxy' parameter for proxy configuration
+            # For simplicity, we'll use HTTPS_PROXY if available, otherwise HTTP_PROXY
+            proxy_url = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
+            
+            # Corporate proxies like Zscaler often have SSL certificate issues
+            # We'll disable SSL verification for proxy connections if needed
+            verify_ssl = os.getenv("VERIFY_SSL", "true").lower() != "false"
+            
+            http_client = httpx.Client(
+                proxy=proxy_url,
+                verify=verify_ssl
+            )
+        
+        # Initialize the Anthropic client with proxy support (API key from environment)
+        self.client = Anthropic(
+            http_client=http_client
+        )
         # Store the model ID to use for all requests
         self.model = model
 

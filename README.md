@@ -2,6 +2,8 @@
 
 MCP Chat is a command-line interface application that enables interactive chat capabilities with AI models through the Anthropic API. The application supports document retrieval, command-based prompts, and extensible tool integrations via the MCP (Model Control Protocol) architecture.
 
+**Note**: This project requires [uv](https://github.com/astral-sh/uv) for package management and execution. Traditional pip/python setups are not supported.
+
 **Source**: This is the original code from Anthropic's MCP Introduction Course at: https://anthropic.skilljar.com/introduction-to-model-context-protocol
 
 **Enhancements**: We have added educational code comments throughout the codebase and generated comprehensive training materials in the `docs/` folder to help developers learn MCP concepts.
@@ -30,16 +32,29 @@ cp .env.dist .env
 ```
 ANTHROPIC_API_KEY=""  # Enter your Anthropic API secret key
 CLAUDE_MODEL=""       # Enter your Claude model (e.g., claude-3-sonnet-20240229)
-USE_UV=1             # Set to 1 if using uv, 0 if using python directly
 ```
+
+### Proxy Configuration (Optional)
+
+If you're behind a corporate proxy (e.g., Zscaler), add these settings to your `.env` file:
+
+```
+HTTP_PROXY=http://127.0.0.1:9000
+HTTPS_PROXY=http://127.0.0.1:9000
+NO_PROXY=localhost,127.0.0.1,.local
+
+# SSL Configuration for corporate proxies
+# Set to false if you're having SSL certificate issues with corporate proxies
+VERIFY_SSL=false
+```
+
+The application will automatically detect and configure proxy settings when these environment variables are present.
 
 ### Step 2: Install dependencies
 
-#### Option 1: Setup with uv (Recommended)
+This project requires [uv](https://github.com/astral-sh/uv) for package management and running.
 
-[uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver.
-
-1. [Install uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation), if not already installed:
+1. [Install uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation), if not already installed
 
 2. Install dependencies:
 
@@ -47,31 +62,10 @@ USE_UV=1             # Set to 1 if using uv, 0 if using python directly
 uv sync
 ```
 
-3. Run the project
+3. Run the project:
 
 ```bash
 uv run main.py
-```
-
-#### Option 2: Setup without uv
-
-1. Create and activate a virtual environment:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-2. Install dependencies:
-
-```bash
-pip install anthropic python-dotenv prompt-toolkit "mcp[cli]==1.8.0"
-```
-
-3. Run the project
-
-```bash
-python main.py
 ```
 
 ## Usage
@@ -200,13 +194,13 @@ sequenceDiagram
 
 ### Adding New Documents
 
-Edit the `mcp_server.py` file to add new documents to the `docs` dictionary.
+Edit the `mcp_servers/documents_mcp_server.py` file to add new documents to the `docs` dictionary.
 
 ### Implementing MCP Features
 
 To fully implement the MCP features:
 
-1. Complete the TODOs in `mcp_server.py`
+1. Complete the TODOs in `mcp_servers/documents_mcp_server.py`
 2. Implement the missing functionality in `mcp_client.py`
 
 ### Linting and Typing Check

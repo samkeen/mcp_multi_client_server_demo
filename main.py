@@ -13,6 +13,32 @@ from core.cli import CliApp
 # Load environment variables from .env file
 load_dotenv()
 
+# Configure proxy settings if provided
+def configure_proxy():
+    """Configure proxy settings from environment variables"""
+    http_proxy = os.getenv("HTTP_PROXY")
+    https_proxy = os.getenv("HTTPS_PROXY") 
+    no_proxy = os.getenv("NO_PROXY")
+    verify_ssl = os.getenv("VERIFY_SSL", "true")
+    
+    if http_proxy or https_proxy:
+        print(f"🌐 Configuring proxy settings...")
+        if http_proxy:
+            os.environ["HTTP_PROXY"] = http_proxy
+            print(f"   HTTP_PROXY: {http_proxy}")
+        if https_proxy:
+            os.environ["HTTPS_PROXY"] = https_proxy
+            print(f"   HTTPS_PROXY: {https_proxy}")
+        if no_proxy:
+            os.environ["NO_PROXY"] = no_proxy
+            print(f"   NO_PROXY: {no_proxy}")
+        print(f"   SSL_VERIFY: {verify_ssl}")
+    else:
+        print("🌐 No proxy configuration found")
+
+# Configure proxy before any network operations
+configure_proxy()
+
 # Anthropic Configuration
 # These environment variables are required for Claude API access
 claude_model = os.getenv("CLAUDE_MODEL", "")
@@ -33,23 +59,18 @@ async def main():
     claude_service = Claude(model=claude_model)
 
     # Get any additional MCP server scripts from command line arguments
-    # Example: python main.py calculator.py weather.py
+    # Example: uv run main.py mcp_servers/calculator_mcp_server.py mcp_servers/weather_mcp_server.py
     server_scripts = sys.argv[1:]
     clients = {}
 
-    # Determine the command to run the default MCP server
-    # USE_UV environment variable allows switching between uv and python
-    command, args = (
-        ("uv", ["run", "mcp_server.py"])
-        if os.getenv("USE_UV", "0") == "1"
-        else ("python", ["mcp_server.py"])
-    )
+    # Use uv to run the default documents MCP server
+    command, args = ("uv", ["run", "mcp_servers/documents_mcp_server.py"])
 
     # AsyncExitStack manages multiple async contexts (MCP clients)
     # It ensures all clients are properly closed when the program exits
     async with AsyncExitStack() as stack:
         # Initialize the default document MCP server
-        # This server provides access to documents and commands
+        # This server provides access to documents and related commands
         doc_client = await stack.enter_async_context(
             MCPClient(command=command, args=args)
         )

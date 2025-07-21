@@ -172,7 +172,7 @@ async def main():
     async with MCPClient(
         # If using Python without UV, update command to 'python' and remove "run" from args.
         command="uv",
-        args=["run", "mcp_server.py"],
+        args=["run", "mcp_servers/documents_mcp_server.py"],
     ) as _client:
         # In a real application, you would interact with the client here:
         # tools = await _client.list_tools()
