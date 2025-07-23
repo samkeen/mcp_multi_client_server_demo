@@ -40,21 +40,39 @@ uv run main.py mcp_servers/calculator_mcp_server.py mcp_servers/weather_mcp_serv
 uv sync
 ```
 
-## Architecture
+## Multi-Server Architecture
 
-### Core Components
+The application supports flexible MCP server loading with two modes:
 
-1. **MCP Client/Server Architecture**
-   - `mcp_servers/documents_mcp_server.py`: Implements MCP server with document management tools
-   - `mcp_client.py`: MCP client for connecting to servers
-   - `main.py`: Entry point that initializes MCP clients and starts CLI
+### Auto-Discovery Mode (Default)
+When no servers are specified, automatically loads all `*mcp_server.py` files in the `mcp_servers/` directory:
 
-2. **Core Module (`core/`)**
-   - `claude.py`: Wrapper for Anthropic's Claude API
-   - `cli.py`: Main CLI application with prompt toolkit integration
-   - `cli_chat.py`: Chat interface handling user inputs and Claude responses
-   - `chat.py`: Core chat functionality and message handling
-   - `tools.py`: Tool implementations and utilities
+```bash
+# Auto-discover and load all available servers
+uv run main.py
+```
+
+### Manual Selection Mode  
+Specify exactly which servers to load:
+
+```bash
+# Load only calculator server
+uv run main.py mcp_servers/calculator_mcp_server.py
+
+# Load multiple specific servers
+uv run main.py mcp_servers/calculator_mcp_server.py mcp_servers/weather_mcp_server.py
+```
+
+### Server Status Display
+The application displays which servers are loaded:
+- 🔍 Auto-discovery mode shows the search pattern
+- 📋 Manual mode shows "Using specified MCP servers"  
+- 🚀 Lists all loaded servers with friendly names
+
+This architecture allows for:
+1. **Easy development** - just add new `*mcp_server.py` files and they're auto-discovered
+2. **Flexible deployment** - choose exactly which servers to run
+3. **Clear visibility** - see exactly what's loaded at startup
 
 ### Key Design Patterns
 

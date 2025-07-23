@@ -68,6 +68,30 @@ uv sync
 uv run main.py
 ```
 
+### Running with Multiple MCP Servers
+
+The application supports flexible MCP server loading:
+
+**Auto-Discovery (Default):**
+```bash
+# Automatically loads all *mcp_server.py files in mcp_servers/
+uv run main.py
+```
+
+**Manual Selection:**
+```bash
+# Load specific servers only
+uv run main.py mcp_servers/calculator_mcp_server.py
+uv run main.py mcp_servers/documents_mcp_server.py
+
+# Multiple specific servers
+uv run main.py mcp_servers/calculator_mcp_server.py mcp_servers/weather_mcp_server.py
+```
+
+The application will display which servers are loaded at startup.
+
+See [MULTI_SERVER_USAGE.md](MULTI_SERVER_USAGE.md) for detailed examples.
+
 ## Usage
 
 ### Basic Interaction
@@ -206,3 +230,52 @@ To fully implement the MCP features:
 ### Linting and Typing Check
 
 There are no lint or type checks implemented.
+
+---
+
+## Appendix: Feature Requests & Future Enhancements
+
+### Current Architecture Limitations
+
+**Document Features (When No Documents Server Loaded)**
+When running with only non-document servers (e.g., `uv run main.py mcp_servers/calculator_mcp_server.py`):
+
+- ❌ **@ Mentions**: `@document.pdf` references will not fetch document content
+- ❌ **/ Commands**: `/format document.pdf` commands will not work
+
+**Why This is Correct Behavior**:
+- These features should only work when a documents server is available
+- Clean architecture: no fake dependencies or hardcoded assumptions
+- Graceful degradation: other features work normally
+
+### Requested Enhancements
+
+#### 1. Better User Feedback
+**Priority**: Low  
+**Description**: When user tries @mentions or /commands without documents server, provide helpful error message explaining they need to load documents server.
+
+#### 2. Feature Detection UI
+**Priority**: Low  
+**Description**: CLI could show which features are available based on loaded servers:
+```
+Available features:
+  ✅ Mathematical calculations (calculator server)
+  ❌ Document operations (no documents server loaded)
+```
+
+#### 3. Dynamic Server Loading
+**Priority**: Very Low  
+**Description**: Allow adding/removing servers during runtime without restart.
+
+#### 4. Additional Server Types
+**Priority**: Medium  
+**Suggested servers to implement**:
+- **Weather Server**: Weather data and forecasts
+- **File System Server**: File operations and management  
+- **Database Server**: Data storage and retrieval
+- **API Integration Server**: External service connections
+- **Code Generation Server**: Programming assistance tools
+
+#### 5. Enhanced Multi-Server Tool Composition
+**Priority**: Medium  
+**Description**: Better examples and documentation showing how Claude can compose tools from multiple servers in a single response (e.g., read document + perform calculations + edit results back).

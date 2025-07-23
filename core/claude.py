@@ -28,7 +28,7 @@ class Claude:
             proxy_url = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
             
             # Corporate proxies like Zscaler often have SSL certificate issues
-            # We'll disable SSL verification for proxy connections if needed
+            # We'll allow disable SSL verification for proxy connections if needed
             verify_ssl = os.getenv("VERIFY_SSL", "true").lower() != "false"
             
             http_client = httpx.Client(

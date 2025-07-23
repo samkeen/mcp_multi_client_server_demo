@@ -23,35 +23,49 @@ class CliChat(Chat):
     
     def __init__(
         self,
-        doc_client: MCPClient,  # Primary MCP client for documents
-        clients: dict[str, MCPClient],  # All MCP clients (including doc_client)
+        clients: dict[str, MCPClient],  # All MCP clients
         claude_service: Claude,  # Claude API service
     ):
         # Initialize parent class with all clients
         super().__init__(clients=clients, claude_service=claude_service)
 
-        # Keep a reference to the document client for document operations
-        self.doc_client: MCPClient = doc_client
-
     async def list_prompts(self) -> list[Prompt]:
-        """Get available prompts/commands from the document MCP server."""
-        return await self.doc_client.list_prompts()
+        """Get available prompts from any available client."""
+        for client in self.clients.values():
+            try:
+                return await client.list_prompts()
+            except Exception:
+                continue
+        return []
 
     async def list_docs_ids(self) -> list[str]:
-        """Get list of available document IDs from the MCP server."""
-        # This reads the 'docs://documents' resource which returns a list
-        return await self.doc_client.read_resource("docs://documents")
+        """Get list of available document IDs, if any documents server exists."""
+        for client in self.clients.values():
+            try:
+                return await client.read_resource("docs://documents")
+            except Exception:
+                continue
+        return []
 
     async def get_doc_content(self, doc_id: str) -> str:
-        """Fetch the content of a specific document by ID."""
-        # Uses the resource URI pattern defined in the MCP server
-        return await self.doc_client.read_resource(f"docs://documents/{doc_id}")
+        """Fetch document content, if any documents server exists."""
+        for client in self.clients.values():
+            try:
+                return await client.read_resource(f"docs://documents/{doc_id}")
+            except Exception:
+                continue
+        raise FileNotFoundError(f"Document '{doc_id}' not found - no documents server available")
 
     async def get_prompt(
         self, command: str, doc_id: str
     ) -> list[PromptMessage]:
-        """Get a prompt template with arguments filled in."""
-        return await self.doc_client.get_prompt(command, {"doc_id": doc_id})
+        """Get a prompt template, trying all available clients."""
+        for client in self.clients.values():
+            try:
+                return await client.get_prompt(command, {"doc_id": doc_id})
+            except Exception:
+                continue
+        raise ValueError(f"Command '{command}' not found in any server")
 
     async def _extract_resources(self, query: str) -> str:
         """
@@ -96,13 +110,14 @@ class CliChat(Chat):
 
         # Get the prompt template from the MCP server
         # The second word is assumed to be the document ID
-        messages = await self.doc_client.get_prompt(
-            command, {"doc_id": words[1]}
-        )
-
-        # Convert MCP prompt messages to Claude message format
-        self.messages += convert_prompt_messages_to_message_params(messages)
-        return True
+        try:
+            messages = await self.get_prompt(command, words[1])
+            # Convert MCP prompt messages to Claude message format
+            self.messages += convert_prompt_messages_to_message_params(messages)
+            return True
+        except (ValueError, IndexError):
+            # Command not found or invalid syntax - treat as regular query
+            return False
 
     async def _process_query(self, query: str):
         """

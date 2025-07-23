@@ -1,6 +1,8 @@
 import asyncio
 import sys
 import os
+import glob
+from pathlib import Path
 from dotenv import load_dotenv
 from contextlib import AsyncExitStack
 
@@ -58,40 +60,53 @@ async def main():
     # Initialize the Claude API service
     claude_service = Claude(model=claude_model)
 
-    # Get any additional MCP server scripts from command line arguments
-    # Example: uv run main.py mcp_servers/calculator_mcp_server.py mcp_servers/weather_mcp_server.py
+    # Get any MCP server scripts from command line arguments or auto-discover
     server_scripts = sys.argv[1:]
-    clients = {}
+    
+    # If no servers specified, auto-discover all *mcp_server.py files in mcp_servers/
+    if not server_scripts:
+        mcp_servers_pattern = "mcp_servers/*mcp_server.py"
+        server_scripts = glob.glob(mcp_servers_pattern)
+        print(f"🔍 Auto-discovering MCP servers: {mcp_servers_pattern}")
+    else:
+        print(f"📋 Using specified MCP servers")
+    
+    # Display loaded servers
+    if server_scripts:
+        print(f"🚀 Loading {len(server_scripts)} MCP server(s):")
+        for i, script in enumerate(server_scripts, 1):
+            server_name = Path(script).stem.replace('_mcp_server', '').replace('_', ' ').title()
+            print(f"   {i}. {server_name} ({script})")
+    else:
+        print("⚠️  No MCP servers found or specified")
+        return
 
-    # Use uv to run the default documents MCP server
-    command, args = ("uv", ["run", "mcp_servers/documents_mcp_server.py"])
+    clients = {}
 
     # AsyncExitStack manages multiple async contexts (MCP clients)
     # It ensures all clients are properly closed when the program exits
     async with AsyncExitStack() as stack:
-        # Initialize the default document MCP server
-        # This server provides access to documents and related commands
-        doc_client = await stack.enter_async_context(
-            MCPClient(command=command, args=args)
-        )
-        clients["doc_client"] = doc_client
-
-        # Initialize any additional MCP servers passed as command line arguments
+        # Initialize all MCP servers
         # Each server runs in its own process and can provide different tools
         for i, server_script in enumerate(server_scripts):
-            client_id = f"client_{i}_{server_script}"
+            client_id = f"client_{i}_{Path(server_script).stem}"
+            # Use uv to run each MCP server
+            command, args = ("uv", ["run", server_script])
             # await ensures the client is fully initialized before continuing
             client = await stack.enter_async_context(
-                MCPClient(command="uv", args=["run", server_script])
+                MCPClient(command=command, args=args)
             )
             clients[client_id] = client
 
+        # Ensure we have at least one client
+        if not clients:
+            print("❌ Error: No MCP servers could be initialized")
+            return
+
         # Create the chat interface that coordinates between:
-        # - The Claude API service
-        # - The document MCP client
-        # - Any additional MCP clients
+        # - The Claude API service  
+        # - All available MCP clients
         chat = CliChat(
-            doc_client=doc_client,
             clients=clients,
             claude_service=claude_service,
         )

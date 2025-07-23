@@ -10,6 +10,12 @@ The default document management server that provides:
 - **Resources**: List and fetch document contents
 - **Prompts**: Format documents in markdown
 
+### calculator_mcp_server.py
+A simple mathematical operations server that provides:
+- **Tools**: Basic math operations (add, subtract, multiply, divide, power, square_root, calculate_expression)
+- **Resources**: Calculator information and capabilities
+- **Purpose**: Demonstrates multi-server architecture and tool composition
+
 ## Adding New Servers
 
 To add a new MCP server:
