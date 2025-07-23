@@ -48,5 +48,7 @@ The clean solution implemented:
 - ✅ No artificial coupling between CliChat and specific server types
 - ✅ Works with any combination of MCP servers
 - ✅ True capability-based feature availability
+- ✅ Organized clients into `mcp_clients/` directory for modularity
+- ✅ Renamed client to `mcp_client_console.py` to reflect its specific transport type
 
 This is the correct architectural approach vs. the previous band-aid fix.

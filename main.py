@@ -6,7 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from contextlib import AsyncExitStack
 
-from mcp_client import MCPClient
+from mcp_clients.mcp_client_console import MCPClient
 from core.claude import Claude
 
 from core.cli_chat import CliChat

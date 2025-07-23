@@ -8,7 +8,7 @@ import os
 from contextlib import AsyncExitStack
 from dotenv import load_dotenv
 
-from mcp_client import MCPClient
+from mcp_clients.mcp_client_console import MCPClient
 
 async def test_calculator_server():
     """Test the calculator MCP server tools"""

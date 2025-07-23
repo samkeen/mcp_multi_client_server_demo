@@ -10,9 +10,12 @@ This is an MCP (Model Context Protocol) Chat application - a CLI tool for intera
 
 ```
 ├── main.py                    # Entry point - initializes MCP clients and CLI
-├── mcp_client.py             # MCP client for connecting to servers
+├── mcp_clients/              # Directory containing MCP client implementations
+│   ├── mcp_client_console.py   # Console/stdio MCP client
+│   └── README.md             # Guide for adding new client types
 ├── mcp_servers/              # Directory containing MCP servers
 │   ├── documents_mcp_server.py  # Document management server
+│   ├── calculator_mcp_server.py # Mathematical operations server
 │   └── README.md             # Guide for adding new servers
 ├── core/                     # Core application modules
 │   ├── claude.py            # Claude API wrapper

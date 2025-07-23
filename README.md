@@ -12,6 +12,16 @@ MCP Chat is a command-line interface application that enables interactive chat c
 
 **Training Materials**: See `docs/` folder for auto-generated educational slides and presentations
 
+## Architecture Overview
+
+This application demonstrates a flexible, modular MCP architecture:
+
+- **`mcp_servers/`** - Modular MCP servers providing different capabilities (documents, calculator, etc.)
+- **`mcp_clients/`** - Pluggable MCP client implementations for different transport types (console/stdio, HTTP, etc.)
+- **`core/`** - Core application logic for chat interface, Claude API integration, and tool management
+- **Auto-discovery** - Automatically loads all available servers when no specific servers are specified
+- **Multi-server composition** - Claude can use tools from multiple servers in a single response
+
 ## Prerequisites
 
 - Python 3.9+
@@ -225,7 +235,7 @@ Edit the `mcp_servers/documents_mcp_server.py` file to add new documents to the 
 To fully implement the MCP features:
 
 1. Complete the TODOs in `mcp_servers/documents_mcp_server.py`
-2. Implement the missing functionality in `mcp_client.py`
+2. Implement the missing functionality in `mcp_clients/mcp_client_console.py`
 
 ### Linting and Typing Check
 

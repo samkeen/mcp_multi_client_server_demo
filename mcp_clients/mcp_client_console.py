@@ -1,6 +1,6 @@
-# MCP Client Implementation - Learning Example
-# This file demonstrates how to create an MCP client that connects to MCP servers
-# and provides a Python interface to their tools, resources, and prompts.
+# MCP Console Client Implementation - stdio Transport
+# This client connects to MCP servers via stdio (stdin/stdout) transport,
+# which is ideal for local server processes spawned as subprocesses.
 
 import sys
 import asyncio
@@ -15,11 +15,18 @@ from pydantic import AnyUrl
 
 class MCPClient:
     """
-    A client for connecting to MCP (Model Context Protocol) servers.
+    A console-based MCP client that connects to servers via stdio transport.
     
-    MCP servers run as separate processes and communicate via stdio (stdin/stdout).
-    This client manages the lifecycle of that connection and provides methods
-    to interact with the server's capabilities.
+    This client implementation:
+    - Spawns MCP servers as local subprocesses
+    - Communicates via stdin/stdout (stdio transport)
+    - Manages the full lifecycle of server processes
+    - Provides a Python interface to MCP protocol operations
+    
+    Use this client for:
+    - Local MCP servers (like our documents and calculator servers)
+    - Development and testing
+    - CLI applications that need direct server control
     """
     
     def __init__(
@@ -73,32 +80,6 @@ class MCPClient:
                 "Client session not initialized or cache not populated. Call connect_to_server first."
             )
         return self._session
-
-    # These commented methods show the learning progression:
-    # First, learners see the method signatures they need to implement
-    # Then below, they see the actual implementations
-    
-    # async def list_tools(self) -> list[types.Tool]:
-    #     # TODO: Return a list of tools defined by the MCP server
-    #     return []
-
-    # async def call_tool(
-    #     self, tool_name: str, tool_input: dict
-    # ) -> types.CallToolResult | None:
-    #     # TODO: Call a particular tool and return the result
-    #     return None
-
-    # async def list_prompts(self) -> list[types.Prompt]:
-    #     # TODO: Return a list of prompts defined by the MCP server
-    #     return []
-
-    # async def get_prompt(self, prompt_name, args: dict[str, str]):
-    #     # TODO: Get a particular prompt defined by the MCP server
-    #     return []
-
-    # async def read_resource(self, uri: str) -> Any:
-    #     # TODO: Read a resource, parse the contents and return it
-    #     return []
 
     async def list_tools(self) -> list[types.Tool]:
         """List all tools available from the connected MCP server."""
@@ -166,11 +147,11 @@ class MCPClient:
         await self.cleanup()
 
 
-# Example usage for testing the client
+# Example usage for testing the console client
 async def main():
     # Using async with ensures the client is properly cleaned up
     async with MCPClient(
-        # If using Python without UV, update command to 'python' and remove "run" from args.
+        # Console client spawns servers as subprocesses using command/args
         command="uv",
         args=["run", "mcp_servers/documents_mcp_server.py"],
     ) as _client:

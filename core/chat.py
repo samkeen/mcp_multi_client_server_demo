@@ -3,7 +3,7 @@
 # handling the conversation loop between user, Claude, and MCP tools.
 
 from core.claude import Claude
-from mcp_client import MCPClient
+from mcp_clients.mcp_client_console import MCPClient
 from core.tools import ToolManager
 from anthropic.types import MessageParam
 
