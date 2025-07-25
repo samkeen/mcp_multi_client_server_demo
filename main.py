@@ -5,6 +5,8 @@ import glob
 from pathlib import Path
 from dotenv import load_dotenv
 from contextlib import AsyncExitStack
+import subprocess
+import time
 
 from mcp_clients.mcp_client_console import MCPClient
 from core.claude import Claude
@@ -52,6 +54,84 @@ assert claude_model, "Error: CLAUDE_MODEL cannot be empty. Update .env"
 assert anthropic_api_key, (
     "Error: ANTHROPIC_API_KEY cannot be empty. Update .env"
 )
+
+
+def start_web_mode():
+    """
+    Start the application in web mode.
+    
+    This function:
+    1. Starts MCP servers in HTTP mode on different ports
+    2. Starts the web server with Claude API proxy
+    3. Opens the web interface in the browser (optional)
+    """
+    print("🌐 Starting MCP Learning Demo in Web Mode")
+    print("=" * 50)
+    
+    # Get MCP server scripts (same logic as console mode)
+    server_scripts = sys.argv[2:]  # Skip 'main.py' and '--web'
+    
+    if not server_scripts:
+        mcp_servers_pattern = "mcp_servers/*mcp_server.py"
+        server_scripts = glob.glob(mcp_servers_pattern)
+        print(f"🔍 Auto-discovering MCP servers: {mcp_servers_pattern}")
+    else:
+        print(f"📋 Using specified MCP servers")
+    
+    if not server_scripts:
+        print("⚠️  No MCP servers found or specified")
+        return
+    
+    # Display servers that will be started
+    print(f"🚀 Starting {len(server_scripts)} MCP server(s) in HTTP mode:")
+    ports = [8001, 8002, 8003, 8004, 8005]  # Assign ports for each server
+    server_processes = []
+    
+    try:
+        # Start each MCP server in HTTP mode
+        for i, script in enumerate(server_scripts):
+            if i >= len(ports):
+                print(f"   ⚠️  Skipping {script} - no available port")
+                continue
+                
+            port = ports[i]
+            server_name = Path(script).stem.replace('_mcp_server', '').replace('_', ' ').title()
+            print(f"   {i+1}. {server_name} → http://localhost:{port} ({script})")
+            
+            # Start the server process with HTTP transport and specific port
+            process = subprocess.Popen([
+                "uv", "run", script, "http", str(port)
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+            server_processes.append((process, server_name, port))
+            time.sleep(0.5)  # Give each server time to start
+        
+        # Wait a bit more for all servers to be fully ready
+        print(f"\n⏳ Waiting for {len(server_processes)} MCP servers to start...")
+        time.sleep(3)
+        
+        print("\n🌐 Starting web server...")
+        print("   Web Interface: http://localhost:8000")
+        print("   Claude API Proxy: http://localhost:8000/claude-proxy")
+        print("   Configuration: http://localhost:8000/config")
+        
+        # Import and start the web server
+        from web_server import start_server
+        start_server(host="127.0.0.1", port=8000)
+        
+    except KeyboardInterrupt:
+        print("\n🛑 Shutting down web mode...")
+        
+        # Clean up server processes
+        for process, name, port in server_processes:
+            print(f"   Stopping {name}...")
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+        
+        print("✅ Web mode stopped")
 
 
 # Main async function - this is the entry point for our async application
@@ -117,7 +197,43 @@ async def main():
         await cli.run()  # Starts the interactive prompt loop
 
 
+def print_usage():
+    """Print usage instructions for the MCP Learning Demo."""
+    print("MCP Learning Demo - Model Context Protocol Chat Interface")
+    print("=" * 60)
+    print()
+    print("USAGE:")
+    print("  Console Mode:")
+    print("    uv run main.py                           # Auto-discover all servers")
+    print("    uv run main.py server1.py server2.py    # Use specific servers")
+    print()
+    print("  Web Mode:")
+    print("    uv run main.py --web                     # Auto-discover all servers")
+    print("    uv run main.py --web server1.py         # Use specific servers")
+    print()
+    print("TRANSPORT MODES:")
+    print("  • Console mode uses stdio transport (spawns subprocesses)")
+    print("  • Web mode uses HTTP transport (remote server connections)")
+    print()
+    print("EXAMPLES:")
+    print("  uv run main.py")
+    print("  uv run main.py --web")
+    print("  uv run main.py mcp_servers/calculator_mcp_server.py")
+    print("  uv run main.py --web mcp_servers/calculator_mcp_server.py")
+    print()
+
+
 if __name__ == "__main__":
+    # Show help if requested
+    if len(sys.argv) > 1 and sys.argv[1] in ["--help", "-h", "help"]:
+        print_usage()
+        sys.exit(0)
+    
+    # Check if web mode is requested - handle separately to avoid event loop conflicts
+    if len(sys.argv) > 1 and sys.argv[1] == "--web":
+        start_web_mode()
+        sys.exit(0)
+    
     # Windows requires a specific event loop policy for subprocess support
     # This is needed for MCP servers which run as subprocesses
     if sys.platform == "win32":

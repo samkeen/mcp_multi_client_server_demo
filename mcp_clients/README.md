@@ -13,6 +13,15 @@ The default console/CLI MCP client implementation that provides:
 - **Prompt Management**: Fetch and execute prompt templates
 - **Context Manager Support**: Automatic cleanup with `async with` syntax
 
+### mcp_client_http.py
+The web-based HTTP MCP client implementation that provides:
+- **HTTP Transport**: Communication via Streamable HTTP with remote servers
+- **Remote Connections**: Connect to MCP servers running as HTTP services
+- **Same Interface**: Drop-in replacement for console client with identical methods
+- **Network Resilience**: Handles timeouts, retries, and connection management
+- **Web Integration**: Designed for web applications and remote deployments
+- **Future-Proof**: Suitable for production deployments and cloud environments
+
 ## Client Architecture
 
 Each MCP client handles:
@@ -96,11 +105,24 @@ Different transports have different characteristics:
 | TCP | High performance | Fast, reliable | Lower level |
 | SSH | Remote servers | Secure, authenticated | Network dependent |
 
+## Transport Comparison
+
+| Feature | Console Client (stdio) | HTTP Client (streamable-http) |
+|---------|----------------------|------------------------------|
+| **Use Case** | Local development, CLI apps | Web apps, remote deployments |
+| **Connection** | Spawns subprocesses | Connects to HTTP endpoints |
+| **Performance** | Very fast (local) | Network dependent |
+| **Scalability** | Limited to local machine | Highly scalable |
+| **Complexity** | Simple | Slightly more complex |
+| **Security** | Process isolation | Network security needed |
+| **Debugging** | Process logs | HTTP request/response logs |
+
 ## Current Usage
 
-The console client is used throughout the application:
-- `main.py` - Primary client for server connections
-- `test_calculator.py` - Testing calculator server functionality
-- `core/` modules - Chat interface and tool management
+Both clients are used throughout the application:
+- **Console Mode**: `main.py` uses `MCPClient` for stdio transport
+- **Web Mode**: `main.py --web` uses `MCPClientHTTP` for HTTP transport
+- **Testing**: `test_calculator.py` uses console client for local testing
+- **Core Modules**: Both clients work with existing `core/` modules
 
-All clients should maintain the same interface to ensure compatibility across the application.
+All clients maintain the same interface to ensure compatibility across the application.

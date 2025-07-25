@@ -6,6 +6,12 @@ import json
 from typing import Optional, Literal, List
 from mcp.types import CallToolResult, Tool, TextContent
 from mcp_clients.mcp_client_console import MCPClient
+# Support both console and HTTP clients
+try:
+    from mcp_clients.mcp_client_http import MCPClientHTTP
+    MCPClientType = MCPClient | MCPClientHTTP
+except ImportError:
+    MCPClientType = MCPClient
 from anthropic.types import Message, ToolResultBlockParam
 
 
@@ -22,7 +28,7 @@ class ToolManager:
     """
     
     @classmethod
-    async def get_all_tools(cls, clients: dict[str, MCPClient]) -> list[Tool]:
+    async def get_all_tools(cls, clients: dict[str, MCPClientType]) -> list[Tool]:
         """
         Collect all available tools from all connected MCP clients.
         
@@ -52,8 +58,8 @@ class ToolManager:
 
     @classmethod
     async def _find_client_with_tool(
-        cls, clients: list[MCPClient], tool_name: str
-    ) -> Optional[MCPClient]:
+        cls, clients: list[MCPClientType], tool_name: str
+    ) -> Optional[MCPClientType]:
         """
         Find which MCP client provides a specific tool.
         
@@ -108,7 +114,7 @@ class ToolManager:
 
     @classmethod
     async def execute_tool_requests(
-        cls, clients: dict[str, MCPClient], message: Message
+        cls, clients: dict[str, MCPClientType], message: Message
     ) -> List[ToolResultBlockParam]:
         """
         Execute all tool requests from Claude's message.
@@ -166,13 +172,22 @@ class ToolManager:
                 content_list = [
                     item.text for item in items if isinstance(item, TextContent)
                 ]
-                # Convert to JSON for consistent formatting
-                content_json = json.dumps(content_list)
+                
+                # Format content based on number of items to avoid unnecessary array wrapping
+                if len(content_list) == 1:
+                    # Single result - return the text directly (more natural format)
+                    content_result = content_list[0]
+                elif len(content_list) == 0:
+                    # No content - return empty string
+                    content_result = ""
+                else:
+                    # Multiple results - use JSON array format
+                    content_result = json.dumps(content_list)
                 
                 # Build the result block with success/error status
                 tool_result_part = cls._build_tool_result_part(
                     tool_use_id,
-                    content_json,
+                    content_result,
                     "error"
                     if tool_output and tool_output.isError
                     else "success",

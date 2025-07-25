@@ -1,6 +1,6 @@
-# MCP Chat
+# MCP Learning Demo
 
-MCP Chat is a command-line interface application that enables interactive chat capabilities with AI models through the Anthropic API. The application supports document retrieval, command-based prompts, and extensible tool integrations via the MCP (Model Control Protocol) architecture.
+MCP Learning Demo is a comprehensive application that enables interactive chat capabilities with AI models through the Anthropic API. It provides both **console** and **web** interfaces, supporting document retrieval, command-based prompts, and extensible tool integrations via the MCP (Model Context Protocol) architecture.
 
 **Note**: This project requires [uv](https://github.com/astral-sh/uv) for package management and execution. Traditional pip/python setups are not supported.
 
@@ -14,13 +14,21 @@ MCP Chat is a command-line interface application that enables interactive chat c
 
 ## Architecture Overview
 
-This application demonstrates a flexible, modular MCP architecture:
+This application demonstrates a flexible, modular MCP architecture with dual interfaces:
 
+### Architecture Components
 - **`mcp_servers/`** - Modular MCP servers providing different capabilities (documents, calculator, etc.)
-- **`mcp_clients/`** - Pluggable MCP client implementations for different transport types (console/stdio, HTTP, etc.)
+- **`mcp_clients/`** - Pluggable MCP client implementations for different transport types (stdio, HTTP)
 - **`core/`** - Core application logic for chat interface, Claude API integration, and tool management
+- **`web/`** - Web-based chat interface with full MCP observability
+- **`web_server.py`** - HTTP server providing Claude API proxy and static file serving
+
+### Key Features
+- **Dual Interface**: Both console (CLI) and web-based chat interfaces
+- **Transport Flexibility**: stdio transport for local development, HTTP transport for web/remote
 - **Auto-discovery** - Automatically loads all available servers when no specific servers are specified
 - **Multi-server composition** - Claude can use tools from multiple servers in a single response
+- **Full Observability** - Web interface shows all MCP communications in real-time
 
 ## Prerequisites
 
@@ -103,6 +111,36 @@ The application will display which servers are loaded at startup.
 See [MULTI_SERVER_USAGE.md](MULTI_SERVER_USAGE.md) for detailed examples.
 
 ## Usage
+
+The MCP Learning Demo supports two interface modes:
+
+### Console Mode (Default)
+Run the traditional command-line interface:
+```bash
+# Auto-discover all available MCP servers
+uv run main.py
+
+# Use specific servers
+uv run main.py mcp_servers/calculator_mcp_server.py mcp_servers/documents_mcp_server.py
+```
+
+### Web Mode
+Run the web-based chat interface with full MCP observability:
+```bash
+# Auto-discover all available MCP servers  
+uv run main.py --web
+
+# Use specific servers
+uv run main.py --web mcp_servers/calculator_mcp_server.py
+```
+
+Then open your browser to: **http://localhost:8000**
+
+The web interface provides:
+- **Split-panel design**: Chat on the left, MCP communication log on the right
+- **Real-time observability**: See all MCP protocol messages as they happen  
+- **Tool execution visualization**: Watch Claude use tools to answer questions
+- **Responsive design**: Works on desktop and mobile devices
 
 ### Basic Interaction
 

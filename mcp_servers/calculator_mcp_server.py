@@ -4,6 +4,16 @@
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 import math
+import sys
+import os
+
+# Check if HTTP transport is requested and configure BEFORE creating FastMCP instance
+if len(sys.argv) > 1 and sys.argv[1] == "http":
+    port = int(sys.argv[2]) if len(sys.argv) > 2 else 8001
+    # Set environment variables BEFORE creating FastMCP instance
+    os.environ['FASTMCP_HOST'] = '127.0.0.1'
+    os.environ['FASTMCP_PORT'] = str(port)
+    os.environ['FASTMCP_STREAMABLE_HTTP_PATH'] = '/mcp'
 
 # Initialize the MCP server
 mcp = FastMCP("CalculatorMCP", log_level="ERROR")
@@ -134,5 +144,30 @@ def calculator_info():
 
 
 if __name__ == "__main__":
-    # Run the server using stdio transport
-    mcp.run(transport="stdio")
+    """
+    Start the MCP server with configurable transport.
+    
+    Transport options:
+    - stdio: For console/CLI clients (default)
+    - http: For web clients and remote connections
+    
+    Usage:
+        python calculator_mcp_server.py          # Uses stdio transport
+        python calculator_mcp_server.py http     # Uses HTTP transport on port 8001
+    """
+    
+    # Check if HTTP transport is requested
+    if len(sys.argv) > 1 and sys.argv[1] == "http":
+        # Get port from command line or default to 8001
+        port = int(sys.argv[2]) if len(sys.argv) > 2 else 8001
+        
+        print(f"🔧 Starting Calculator MCP Server with HTTP transport on port {port}")
+        print("   Available tools: add, subtract, multiply, divide, power, square_root, calculate_expression")
+        print(f"   MCP endpoint: http://localhost:{port}/mcp")
+        
+        # Use the correct transport name for FastMCP
+        mcp.run(transport="streamable-http")
+    else:
+        # Default to stdio transport for console clients
+        print("🔧 Starting Calculator MCP Server with stdio transport", file=sys.stderr)
+        mcp.run(transport="stdio")
