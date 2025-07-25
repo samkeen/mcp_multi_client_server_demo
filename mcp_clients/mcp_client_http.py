@@ -13,7 +13,7 @@ from pydantic import AnyUrl
 
 # Set up logging for debugging
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+# Note: Don't override global logging config - use logging.basicConfig() in main.py instead
 
 
 class MCPClientHTTP:

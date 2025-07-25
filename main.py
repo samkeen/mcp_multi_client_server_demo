@@ -2,6 +2,7 @@ import asyncio
 import sys
 import os
 import glob
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 from contextlib import AsyncExitStack
@@ -13,6 +14,15 @@ from core.claude import Claude
 
 from core.cli_chat import CliChat
 from core.cli import CliApp
+
+# Configure logging level - set to INFO to reduce debug noise
+# You can change this to DEBUG, WARNING, ERROR as needed
+# Or set via environment variable: LOG_LEVEL=DEBUG
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=getattr(logging, log_level, logging.INFO),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Load environment variables from .env file
 load_dotenv()
