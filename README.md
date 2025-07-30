@@ -193,7 +193,7 @@ How the application loads and coordinates multiple MCP servers using centralized
 
 ```mermaid
 graph TB
-    A[Application Start] --> B[MCPServerConfig.get_server_configs()]
+    A[Application Start] --> B[MCPServerConfig.get_server_configs]
     B --> C[Scan mcp_servers/*mcp_server.py]
     C --> D[Assign Dynamic Ports: 8001, 8002, 8003...]
     D --> E{Execution Mode}
