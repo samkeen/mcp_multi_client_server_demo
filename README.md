@@ -155,33 +155,7 @@ The `MCPServerConfig` class provides:
 - **Single Source of Truth**: All server discovery and port assignment logic in one place
 - **Consistent Behavior**: Both console and web modes use identical configuration
 - **Dynamic Port Assignment**: Automatically assigns ports 8001, 8002, 8003, etc.
-- **No Configuration Drift**: Impossible for different modes to have conflicting server setups
-
-### Benefits of Centralized Configuration
-
-**Before**: Hardcoded port lists in multiple files
-```python
-# main.py - hardcoded
-ports = [8001, 8002, 8003, 8004, 8005]
-
-# web_server.py - hardcoded  
-server_configs = {
-    "documents": "http://localhost:8001/mcp",
-    "calculator": "http://localhost:8002/mcp"
-}
-```
-
-**After**: Single configuration source
-```python
-# All modes use: MCPServerConfig.get_server_configs()
-# Automatically discovers servers and assigns ports consistently
-```
-
-This architecture ensures that:
-✅ Adding new MCP servers requires no configuration changes  
-✅ Port assignments are always consistent between console and web modes  
-✅ No risk of port conflicts or configuration mismatches  
-✅ Easy to modify port ranges or server limits in one place  
+- **No Configuration Drift**: Impossible for different modes to have conflicting server setups  
 
 ## MCP Interaction Flows
 
