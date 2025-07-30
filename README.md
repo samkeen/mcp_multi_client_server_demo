@@ -15,16 +15,18 @@ This application demonstrates a flexible, modular MCP architecture with multiple
 ### Architecture Components
 - **`mcp_servers/`** - Modular MCP servers providing different capabilities (documents, calculator, etc.)
 - **`mcp_clients/`** - Pluggable MCP client implementations for different transport types (stdio, HTTP)
-- **`core/`** - Core application logic for chat interface, Claude API integration, and tool management
+- **`core/`** - Core application logic for chat interface, Claude API integration, tool management, and centralized server configuration
 - **`web/`** - Web-based chat interface with full MCP observability
 - **`web_server.py`** - HTTP server providing Claude API proxy and static file serving
 
 ### Key Features
 - **Multiple Interfaces**: Both console (CLI) and web-based chat interfaces
 - **Transport Flexibility**: stdio transport for local development, HTTP transport for web/remote
-- **Auto-discovery** - Automatically loads all available servers when no specific servers are specified
-- **Multi-server composition** - Claude can use tools from multiple servers in a single response
-- **Full Observability** - Web interface shows all MCP communications in real-time
+- **Auto-discovery**: Automatically loads all available servers when no specific servers are specified
+- **Centralized Configuration**: Single source of truth for server discovery and port assignment eliminates configuration conflicts
+- **Dynamic Port Assignment**: Servers are automatically assigned ports starting from 8001, supporting up to 10 servers
+- **Multi-server Composition**: Claude can use tools from multiple servers in a single response
+- **Full Observability**: Web interface shows all MCP communications in real-time
 
 ## Prerequisites
 
@@ -84,11 +86,12 @@ uv run main.py
 
 ### Running with Multiple MCP Servers
 
-The application supports flexible MCP server loading:
+The application supports flexible MCP server loading with **centralized configuration management**:
 
 **Auto-Discovery (Default):**
 ```bash
 # Automatically loads all *mcp_server.py files in mcp_servers/
+# Servers are dynamically assigned ports starting from 8001
 uv run main.py
 ```
 
@@ -102,7 +105,13 @@ uv run main.py mcp_servers/documents_mcp_server.py
 uv run main.py mcp_servers/calculator_mcp_server.py mcp_servers/weather_mcp_server.py
 ```
 
-The application will display which servers are loaded at startup.
+**Key Benefits:**
+- **Dynamic Port Assignment**: Servers automatically get assigned ports 8001, 8002, 8003, etc.
+- **Consistent Configuration**: Both console and web modes use identical server discovery logic
+- **No Port Conflicts**: Centralized configuration eliminates port assignment issues
+- **Scalable**: Supports up to 10 servers automatically
+
+The application will display which servers are loaded and their assigned ports at startup.
 
 ## Usage
 
@@ -136,6 +145,43 @@ The web interface provides:
 - **Tool execution visualization**: Watch Claude use tools to answer questions
 - **Responsive design**: Works on desktop and mobile devices
 
+## Configuration Architecture
+
+The application uses a **centralized configuration system** that eliminates common deployment issues:
+
+### Server Configuration (`core/server_config.py`)
+
+The `MCPServerConfig` class provides:
+- **Single Source of Truth**: All server discovery and port assignment logic in one place
+- **Consistent Behavior**: Both console and web modes use identical configuration
+- **Dynamic Port Assignment**: Automatically assigns ports 8001, 8002, 8003, etc.
+- **No Configuration Drift**: Impossible for different modes to have conflicting server setups
+
+### Benefits of Centralized Configuration
+
+**Before**: Hardcoded port lists in multiple files
+```python
+# main.py - hardcoded
+ports = [8001, 8002, 8003, 8004, 8005]
+
+# web_server.py - hardcoded  
+server_configs = {
+    "documents": "http://localhost:8001/mcp",
+    "calculator": "http://localhost:8002/mcp"
+}
+```
+
+**After**: Single configuration source
+```python
+# All modes use: MCPServerConfig.get_server_configs()
+# Automatically discovers servers and assigns ports consistently
+```
+
+This architecture ensures that:
+✅ Adding new MCP servers requires no configuration changes  
+✅ Port assignments are always consistent between console and web modes  
+✅ No risk of port conflicts or configuration mismatches  
+✅ Easy to modify port ranges or server limits in one place  
 
 ## MCP Interaction Flows
 
@@ -143,31 +189,41 @@ The following diagrams illustrate how different types of MCP interactions work w
 
 ### Multi-Server Architecture Flow
 
-How the application loads and coordinates multiple MCP servers:
+How the application loads and coordinates multiple MCP servers using centralized configuration:
 
 ```mermaid
 graph TB
-    A[Application Start] --> B{Server Loading Mode}
-    B -->|Auto-Discovery| C[Scan mcp_servers/*mcp_server.py]
-    B -->|Manual Selection| D[Load Specified Servers]
-    C --> E[Load All Discovered Servers]
-    D --> E
-    E --> F[Initialize MCP Clients]
-    F --> G[Register Tools from All Servers]
-    G --> H[Start Chat Interface]
-    H --> I[Claude Uses Tools from Any Server]
+    A[Application Start] --> B[MCPServerConfig.get_server_configs()]
+    B --> C[Scan mcp_servers/*mcp_server.py]
+    C --> D[Assign Dynamic Ports: 8001, 8002, 8003...]
+    D --> E{Execution Mode}
+    E -->|Console Mode| F[Initialize stdio MCP Clients]
+    E -->|Web Mode| G[Start HTTP Servers on Assigned Ports]
+    F --> H[Register Tools from All Servers]
+    G --> I[Web Server Connects to HTTP Endpoints]
+    H --> J[Start Chat Interface]
+    I --> H
+    J --> K[Claude Uses Tools from Any Server]
     
-    subgraph "Available Servers"
-        J[Documents Server]
-        K[Calculator Server]
-        L[Weather Server]
-        M[Future Servers...]
+    subgraph "Centralized Configuration"
+        L[core/server_config.py]
+        M[Single Source of Truth]
+        N[Dynamic Port Assignment]
+        O[Consistent Discovery Logic]
     end
     
-    E --> J
-    E --> K
-    E --> L
-    E --> M
+    subgraph "Available Servers"
+        P[Documents Server - Port 8001]
+        Q[Calculator Server - Port 8002]  
+        R[Weather Server - Port 8003]
+        S[Future Servers... - Port 800X]
+    end
+    
+    B --> L
+    D --> P
+    D --> Q
+    D --> R
+    D --> S
 ```
 
 ### Tool Usage Flow

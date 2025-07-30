@@ -18,9 +18,13 @@ import uvicorn
 # Import MCP client and tool management
 from mcp_clients.mcp_client_http import MCPClientHTTP
 from core.tools import ToolManager
+from core.server_config import MCPServerConfig
 
 # Load environment variables
 load_dotenv()
+
+
+# Remove the old discover_mcp_servers function - now using shared config
 
 
 class ClaudeAPIProxy:
@@ -143,15 +147,14 @@ async def ensure_mcp_clients_connected():
     """
     Ensure MCP clients are connected to all configured servers with retry logic.
     
-    This function initializes HTTP connections to MCP servers if not already connected.
+    This function dynamically discovers MCP servers and initializes HTTP connections.
     It includes retry logic with exponential backoff for servers that might be starting up.
     """
     import asyncio
     
-    server_configs = {
-        "documents": "http://localhost:8001/mcp",
-        "calculator": "http://localhost:8002/mcp"
-    }
+    # Use shared configuration to ensure consistency with main.py
+    server_configs = MCPServerConfig.get_client_configs()
+    MCPServerConfig.print_discovery_info("web_server")
     
     for client_id, base_url in server_configs.items():
         if client_id not in mcp_clients:
@@ -345,13 +348,11 @@ async def health_check_mcp():
     """
     Health check endpoint specifically for MCP server connectivity.
     
-    This endpoint attempts to connect to all MCP servers and reports their status.
+    This endpoint attempts to connect to all discovered MCP servers and reports their status.
     Useful for debugging connection issues.
     """
-    server_configs = {
-        "documents": "http://localhost:8001/mcp",
-        "calculator": "http://localhost:8002/mcp"
-    }
+    # Use shared configuration for consistency
+    server_configs = MCPServerConfig.get_client_configs()
     
     server_status = {}
     overall_healthy = True
@@ -397,14 +398,14 @@ async def get_config():
     """
     Provide configuration information to the web client.
     
-    This allows the frontend to know what MCP servers are available.
+    This allows the frontend to know what MCP servers are dynamically discovered.
     Note: The frontend now uses proxy endpoints instead of connecting directly.
     """
+    # Use shared configuration for config endpoint
+    mcp_servers = MCPServerConfig.get_client_configs()
+    
     return {
-        "mcp_servers": {
-            "documents": "http://localhost:8001/mcp",
-            "calculator": "http://localhost:8002/mcp"
-        },
+        "mcp_servers": mcp_servers,
         "claude_model": claude_proxy.model,
         "proxy_endpoints": {
             "list_tools": "/list-tools",

@@ -1,9 +1,7 @@
 import asyncio
 import sys
 import os
-import glob
 import logging
-from pathlib import Path
 from dotenv import load_dotenv
 from contextlib import AsyncExitStack
 import subprocess
@@ -11,6 +9,7 @@ import time
 
 from mcp_clients.mcp_client_console import MCPClient
 from core.claude import Claude
+from core.server_config import MCPServerConfig
 
 from core.cli_chat import CliChat
 from core.cli import CliApp
@@ -78,42 +77,37 @@ def start_web_mode():
     print("🌐 Starting MCP Learning Demo in Web Mode")
     print("=" * 50)
     
-    # Get MCP server scripts (same logic as console mode)
-    server_scripts = sys.argv[2:]  # Skip 'main.py' and '--web'
+    # Get MCP server configurations using shared config
+    specified_servers = sys.argv[2:]  # Skip 'main.py' and '--web'
     
-    if not server_scripts:
-        mcp_servers_pattern = "mcp_servers/*mcp_server.py"
-        server_scripts = glob.glob(mcp_servers_pattern)
-        print(f"🔍 Auto-discovering MCP servers: {mcp_servers_pattern}")
-    else:
+    if specified_servers:
         print(f"📋 Using specified MCP servers")
+        # For specified servers, we'd need to adapt the config logic
+        # For now, fall back to discovery for simplicity
+        server_configs = MCPServerConfig.get_server_configs()
+    else:
+        print(f"🔍 Auto-discovering MCP servers: {MCPServerConfig.SERVER_PATTERN}")
+        server_configs = MCPServerConfig.get_server_configs()
     
-    if not server_scripts:
-        print("⚠️  No MCP servers found or specified")
+    if not server_configs:
+        print("⚠️  No MCP servers found")
         return
     
     # Display servers that will be started
-    print(f"🚀 Starting {len(server_scripts)} MCP server(s) in HTTP mode:")
-    ports = [8001, 8002, 8003, 8004, 8005]  # Assign ports for each server
+    print(f"🚀 Starting {len(server_configs)} MCP server(s) in HTTP mode:")
     server_processes = []
     
     try:
-        # Start each MCP server in HTTP mode
-        for i, script in enumerate(server_scripts):
-            if i >= len(ports):
-                print(f"   ⚠️  Skipping {script} - no available port")
-                continue
-                
-            port = ports[i]
-            server_name = Path(script).stem.replace('_mcp_server', '').replace('_', ' ').title()
-            print(f"   {i+1}. {server_name} → http://localhost:{port} ({script})")
+        # Start each MCP server in HTTP mode using shared config
+        for i, (script, server_name, port, display_name) in enumerate(server_configs):
+            print(f"   {i+1}. {display_name} → http://localhost:{port} ({script})")
             
             # Start the server process with HTTP transport and specific port
             process = subprocess.Popen([
                 "uv", "run", script, "http", str(port)
             ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
-            server_processes.append((process, server_name, port))
+            server_processes.append((process, display_name, port))
             time.sleep(0.5)  # Give each server time to start
         
         # Wait a bit more for all servers to be fully ready
@@ -150,25 +144,25 @@ async def main():
     # Initialize the Claude API service
     claude_service = Claude(model=claude_model)
 
-    # Get any MCP server scripts from command line arguments or auto-discover
-    server_scripts = sys.argv[1:]
+    # Get MCP server configurations using shared config
+    specified_servers = sys.argv[1:]
     
-    # If no servers specified, auto-discover all *mcp_server.py files in mcp_servers/
-    if not server_scripts:
-        mcp_servers_pattern = "mcp_servers/*mcp_server.py"
-        server_scripts = glob.glob(mcp_servers_pattern)
-        print(f"🔍 Auto-discovering MCP servers: {mcp_servers_pattern}")
-    else:
+    if specified_servers:
         print(f"📋 Using specified MCP servers")
+        # For specified servers, we'd need to adapt the config logic
+        # For now, fall back to discovery for simplicity
+        server_configs = MCPServerConfig.get_server_configs()
+    else:
+        server_configs = MCPServerConfig.get_server_configs()
+        print(f"🔍 Auto-discovering MCP servers: {MCPServerConfig.SERVER_PATTERN}")
     
     # Display loaded servers
-    if server_scripts:
-        print(f"🚀 Loading {len(server_scripts)} MCP server(s):")
-        for i, script in enumerate(server_scripts, 1):
-            server_name = Path(script).stem.replace('_mcp_server', '').replace('_', ' ').title()
-            print(f"   {i}. {server_name} ({script})")
+    if server_configs:
+        print(f"🚀 Loading {len(server_configs)} MCP server(s):")
+        for i, (script, server_name, port, display_name) in enumerate(server_configs, 1):
+            print(f"   {i}. {display_name} ({script})")
     else:
-        print("⚠️  No MCP servers found or specified")
+        print("⚠️  No MCP servers found")
         return
 
     clients = {}
@@ -176,12 +170,12 @@ async def main():
     # AsyncExitStack manages multiple async contexts (MCP clients)
     # It ensures all clients are properly closed when the program exits
     async with AsyncExitStack() as stack:
-        # Initialize all MCP servers
+        # Initialize all MCP servers using shared config
         # Each server runs in its own process and can provide different tools
-        for i, server_script in enumerate(server_scripts):
-            client_id = f"client_{i}_{Path(server_script).stem}"
+        for i, (script, server_name, port, display_name) in enumerate(server_configs):
+            client_id = f"client_{i}_{server_name}"
             # Use uv to run each MCP server
-            command, args = ("uv", ["run", server_script])
+            command, args = ("uv", ["run", script])
             # await ensures the client is fully initialized before continuing
             client = await stack.enter_async_context(
                 MCPClient(command=command, args=args)

@@ -3,6 +3,7 @@
 # providing a unified interface for Claude to use tools from any connected server.
 
 import json
+import sys
 from typing import Optional, Literal, List
 from mcp.types import CallToolResult, Tool, TextContent
 from mcp_clients.mcp_client_console import MCPClient
@@ -42,9 +43,10 @@ class ToolManager:
             List of tool definitions in Claude's expected format
         """
         tools = []
-        for client in clients.values():
+        for client_name, client in clients.items():
             # Get tools from this MCP server
             tool_models = await client.list_tools()
+            print(f"Tools from {client_name}: {[t.name for t in tool_models]}", file=sys.stderr)
             # Convert MCP tool format to Claude's expected format
             tools += [
                 {
@@ -54,6 +56,7 @@ class ToolManager:
                 }
                 for t in tool_models
             ]
+        print(f"Total tools available: {len(tools)}", file=sys.stderr)
         return tools
 
     @classmethod
