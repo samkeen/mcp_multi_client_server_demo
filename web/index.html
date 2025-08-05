@@ -5,6 +5,203 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MCP Learning Demo - Web Chat Interface</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    
+    <style>
+        /* Fix flex layout to prevent wrapping */
+        #chatMessages {
+            min-width: 0; /* Critical: allows flex item to shrink below content width */
+        }
+        
+        /* Constrain message bubbles properly */
+        .message-bubble {
+            max-width: min(85%, 28rem); /* Responsive width with absolute maximum */
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* Custom styles for code blocks and collapsible sections */
+        .code-block {
+            position: relative;
+            margin: 0.5rem 0;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        
+        /* Ensure code blocks in messages don't break layout */
+        .message-bubble .code-block {
+            max-width: 100%;
+        }
+        
+        .message-bubble pre {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+        
+        .copy-button:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .copy-button.copied {
+            background: #10b981;
+            color: white;
+        }
+        
+        .collapsible-block {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .collapsible-header:hover {
+            background: rgba(0, 0, 0, 0.08);
+        }
+        
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .collapsible-content.expanded {
+            max-height: 2000px;
+            transition: max-height 0.5s ease-in;
+        }
+        
+        .collapsible-icon {
+            transition: transform 0.3s;
+        }
+        
+        .collapsible-icon.expanded {
+            transform: rotate(90deg);
+        }
+        
+        /* Dark theme for console code blocks */
+        .console-code pre[class*="language-"] {
+            background: transparent; /* Remove pre background to match console */
+            margin: 0;
+        }
+        
+        .console-code code[class*="language-"] {
+            background: transparent; /* Remove code background */
+            color: #e5e5e5;
+        }
+        
+        /* Remove background from all Prism tokens in console to prevent artifacts */
+        .console-code .token {
+            background: transparent !important;
+        }
+        
+        /* Apply clean token colors for dark console background */
+        .console-code .token.property {
+            color: #88c999; /* Green for property names */
+        }
+        
+        .console-code .token.string {
+            color: #f4b643; /* Yellow for strings */
+        }
+        
+        .console-code .token.number {
+            color: #de935f; /* Orange for numbers */
+        }
+        
+        .console-code .token.punctuation {
+            color: #abb2bf; /* Light gray for punctuation */
+        }
+        
+        .console-code .token.boolean {
+            color: #c678dd; /* Purple for booleans */
+        }
+        
+        .console-code .token.null {
+            color: #e06c75; /* Red for null */
+        }
+        
+        /* Light theme for chat code blocks */
+        .chat-code pre[class*="language-"] {
+            background: #f7f7f7;
+            margin: 0;
+            padding: 1rem;
+        }
+        
+        /* Override Prism's default styles for better integration */
+        pre[class*="language-"] {
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            max-width: 100%;
+            overflow-x: auto;
+            white-space: pre;
+            word-wrap: normal;
+        }
+        
+        code[class*="language-"] {
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            display: block;
+            overflow-x: auto;
+        }
+        
+        /* Ensure code blocks don't break message bubbles */
+        .inline-block .code-block {
+            max-width: 100%;
+        }
+        
+        .inline-block pre {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        
+        /* Console specific overrides */
+        #consoleContent .code-block {
+            max-width: calc(100% - 1rem);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .code-block {
+                font-size: 0.75rem;
+            }
+            
+            .copy-button {
+                font-size: 0.625rem;
+                padding: 0.125rem 0.25rem;
+            }
+        }
+    </style>
+    
     <script>
         // Configure Tailwind CSS theme
         tailwind.config = {
@@ -40,7 +237,7 @@
         <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
             
             <!-- Chat Section (Left Panel) -->
-            <div class="flex flex-col flex-1 bg-white border-b md:border-b-0 md:border-r border-gray-200">
+            <div class="flex flex-col flex-1 bg-white border-b md:border-b-0 md:border-r border-gray-200" style="min-width: 0;">
                 <!-- Chat messages area -->
                 <div class="flex-1 overflow-y-auto p-4 md:p-6" id="chatMessages">
                     <!-- Welcome message with examples -->
@@ -76,7 +273,7 @@
             </div>
 
             <!-- Console Section (Right Panel) -->
-            <div class="flex flex-col flex-1 bg-gray-900 text-gray-100 min-h-[200px] md:min-h-0">
+            <div class="flex flex-col flex-1 bg-gray-900 text-gray-100 min-h-[200px] md:min-h-0" style="min-width: 0;">
                 <!-- Console header -->
                 <div class="flex justify-between items-center p-3 md:p-4 border-b border-gray-700 bg-gray-800 min-h-[50px] md:min-h-[60px]">
                     <h2 class="text-sm md:text-base font-normal text-gray-100">MCP Communication Log</h2>
